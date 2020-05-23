@@ -82,29 +82,15 @@ def after_request(response):
     return response
 
 
-# from blueprints.client.resources import bp_client
-# from blueprints.produk_type.resources import bp_tipe_produk
-# from blueprints.produk.resources import bp_produk
-# from blueprints.payment_methode.resources import bp_payment_methode
-# from blueprints.jasa_pengiriman_paket.resources import bp_jasa_pengiriman_paket
-# from blueprints.jasa_paket_tipe.resources import bp_jasa_paket_tipe
-# from blueprints.transaction.resources import bp_transaction
-# from blueprints.transaction_detail.resources import bp_transaction_detail
-# from blueprints.comment_produk.resources import bp_comment
+
 from blueprints.user.resources import bp_user
 from blueprints.auth import bp_auth
+from blueprints.order.resources import bp_order
 
 app.register_blueprint(bp_user, url_prefix="/user")
 app.register_blueprint(bp_auth, url_prefix="/auth")
-# app.register_blueprint(bp_client, url_prefix="/client")
-# app.register_blueprint(bp_tipe_produk, url_prefix="/tipe_produk")
-# app.register_blueprint(bp_produk, url_prefix="/produk")
-# app.register_blueprint(bp_payment_methode, url_prefix="/payment_methode")
-# app.register_blueprint(bp_jasa_pengiriman_paket, url_prefix="/pengiriman_paket")
-# app.register_blueprint(bp_jasa_paket_tipe, url_prefix="/jasa_paket_tipe")
-# app.register_blueprint(bp_transaction, url_prefix="/transaction")
-# app.register_blueprint(bp_transaction_detail, url_prefix="/transaction_detail")
-# app.register_blueprint(bp_comment, url_prefix="/comment")
+app.register_blueprint(bp_order, url_prefix="/order")
+
 
 
 db.create_all()

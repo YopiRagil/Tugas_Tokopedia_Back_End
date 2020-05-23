@@ -19,8 +19,7 @@ class Users(db.Model):
     no_hp = db.Column(db.String(14), nullable=False)
     alamat = db.Column(db.String(200), nullable=False)
     avatar = db.Column(db.String(10000), nullable=False)
-    created_at = db.Column(db.DateTime(timezone=True),
-                           server_default=func.now())
+    created_at = db.Column(db.DateTime(timezone=True), server_default=func.now())
     updated_at = db.Column(db.DateTime(timezone=True), onupdate=func.now())
 
     response_fields = {
