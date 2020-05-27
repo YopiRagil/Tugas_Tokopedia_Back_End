@@ -6,9 +6,11 @@ from .model import Orders
 from .model import Users
 from . import *
 from blueprints import db, internal_required
-from flask_jwt_extended import (create_access_token, get_jwt_identity, jwt_required, get_jwt_claims,)
+from flask_jwt_extended import (
+    create_access_token, get_jwt_identity, jwt_required, get_jwt_claims,)
 from sqlalchemy import desc
-import hashlib, uuid
+import hashlib
+import uuid
 
 bp_order = Blueprint("order", __name__)
 api = Api(bp_order)
@@ -35,13 +37,19 @@ class OrderResource(Resource):
     # @jwt_required
     def post(self):
         parser = reqparse.RequestParser()
-        parser.add_argument("penjual_id", location="json", type=int, required=True)
-        parser.add_argument("nama_pembeli", location="json", type=str, required=True)
-        parser.add_argument("alamat_pembeli", location="json", type=str, required=True)
-        parser.add_argument("produk_dipesan", location="json", type=str, required=True)
+        parser.add_argument("penjual_id", location="json",
+                            type=int, required=True)
+        parser.add_argument("nama_pembeli", location="json",
+                            type=str, required=True)
+        parser.add_argument("alamat_pembeli", location="json",
+                            type=str, required=True)
+        parser.add_argument("produk_dipesan", location="json",
+                            type=str, required=True)
         parser.add_argument("harga", location="json", type=int, required=True)
-        parser.add_argument("status", location="json", type=str, default="baru")
-        parser.add_argument("kode_resi", location="json", type=str, required=False)
+        parser.add_argument("status", location="json",
+                            type=str, default="baru")
+        parser.add_argument("kode_resi", location="json",
+                            type=str, required=False)
 
         args = parser.parse_args()
 
@@ -73,14 +81,19 @@ class OrderResource(Resource):
             return {"status": "NOT_FOUND"}, 404
         elif penjual_id != user_id:
             return {"status": "Access Denied", "message": "user id not allowed"}, 403
-        
+
         parser = reqparse.RequestParser()
-        parser.add_argument("nama_pembeli", location="json", type=str, default=qry.nama_pembeli)
-        parser.add_argument("alamat_pembeli", location="json", type=str, default=qry.alamat_pembeli)
-        parser.add_argument("produk_dipesan", location="json", type=str, default=qry.produk_dipesan)
-        parser.add_argument("harga", location="json", type=int, default=qry.harga)
+        parser.add_argument("nama_pembeli", location="json",
+                            type=str, default=qry.nama_pembeli)
+        parser.add_argument("alamat_pembeli", location="json",
+                            type=str, default=qry.alamat_pembeli)
+        parser.add_argument("produk_dipesan", location="json",
+                            type=str, default=qry.produk_dipesan)
+        parser.add_argument("harga", location="json",
+                            type=int, default=qry.harga)
         parser.add_argument("status", location="json", type=str, required=True)
-        parser.add_argument("kode_resi", location="json", type=str, default=qry.kode_resi)
+        parser.add_argument("kode_resi", location="json",
+                            type=str, default=qry.kode_resi)
 
         args = parser.parse_args()
 
@@ -92,11 +105,9 @@ class OrderResource(Resource):
         qry.status = args["status"]
         qry.kode_resi = args["kode_resi"]
 
-
         db.session.commit()
 
         return marshal(qry, Orders.response_fields), 200
-
 
     @jwt_required
     def delete(self, id):
@@ -124,8 +135,17 @@ class OrderList(Resource):
     def get(self):
         parser = reqparse.RequestParser()
         parser.add_argument('p', type=int, location='args', default=1)
-        parser.add_argument('rp', type=int, location='args', default=25)
- 
+        parser.add_argument('rp', type=int, location='args', default=1000)
+        parser.add_argument('created_at', location='args',
+                            help='invalid status')
+        parser.add_argument('start_time', location='args',
+                            help='invalid status')
+        parser.add_argument('end_time', location='args', help='invalid status')
+        parser.add_argument('orderby', location='args',
+                            help='invalid orderby value', choices=('created_at'))
+        parser.add_argument('sort', location='args',
+                            help='invalid sort value', choices=('desc', 'asc'))
+
         args = parser.parse_args()
         offset = (args['p'] * args['rp'] - args['rp'])
 
@@ -134,12 +154,23 @@ class OrderList(Resource):
         penjual_id = qry_user.id
         qry = Orders.query.filter_by(penjual_id=penjual_id)
 
+        if args['start_time'] is not None:
+            qry = qry.filter_by(created_at=args['start_time'])
+
+        if args['orderby'] is not None:
+            if args['orderby'] == 'created_at':
+                if args['sort'] == 'desc':
+                    qry = qry.order_by(desc(Orders.created_at))
+                else:
+                    qry = qry.order_by(Orders.created_at)
+
         rows = []
         for row in qry.limit(args['rp']).offset(offset).all():
             rows.append(marshal(row, Orders.response_fields))
-            
+
         return rows, 200
 
- ###Routes
+
+ # Routes
 api.add_resource(OrderList, "", "/semua")
 api.add_resource(OrderResource, "", "/<id>")

@@ -30,6 +30,8 @@ class Orders(db.Model):
         "harga": fields.Integer,
         "status": fields.String,
         "kode_resi": fields.String,
+        "created_at": fields.DateTime,
+        "updated_at": fields.DateTime
     }
 
     def __init__(self, penjual_id, nama_pembeli, alamat_pembeli, produk_dipesan, harga, status, kode_resi):
