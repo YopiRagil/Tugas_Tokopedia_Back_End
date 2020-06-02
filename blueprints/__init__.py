@@ -16,7 +16,7 @@ cors=CORS(app, origins="*", allow_headers=[
     "Content-Type", "Authorization", "Access-Control-Allow-Credentials"],
     supports_credentials=True, intercept_exceptions=False)
 
-app.config["JWT_SECRET_KEY"] = "apaajaboleh"
+app.config["JWT_SECRET_KEY"] = "yopiragil"
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(days=1)
 
 jwt = JWTManager(app)

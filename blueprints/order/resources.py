@@ -11,6 +11,7 @@ from flask_jwt_extended import (
 from sqlalchemy import desc
 import hashlib
 import uuid
+import re
 
 bp_order = Blueprint("order", __name__)
 api = Api(bp_order)
@@ -34,22 +35,15 @@ class OrderResource(Resource):
             )
         return {"status": "NOT_FOUND"}, 404
 
-    # @jwt_required
     def post(self):
         parser = reqparse.RequestParser()
-        parser.add_argument("penjual_id", location="json",
-                            type=int, required=True)
-        parser.add_argument("nama_pembeli", location="json",
-                            type=str, required=True)
-        parser.add_argument("alamat_pembeli", location="json",
-                            type=str, required=True)
-        parser.add_argument("produk_dipesan", location="json",
-                            type=str, required=True)
+        parser.add_argument("penjual_id", location="json", type=int, required=True)
+        parser.add_argument("nama_pembeli", location="json", type=str, required=True)
+        parser.add_argument("alamat_pembeli", location="json", type=str, required=True)
+        parser.add_argument("produk_dipesan", location="json", type=str, required=True)
         parser.add_argument("harga", location="json", type=int, required=True)
-        parser.add_argument("status", location="json",
-                            type=str, default="baru")
-        parser.add_argument("kode_resi", location="json",
-                            type=str, required=False)
+        parser.add_argument("status", location="json", type=str, default="baru")
+        parser.add_argument("kode_resi", location="json", type=str, required=False)
 
         args = parser.parse_args()
 
@@ -74,26 +68,23 @@ class OrderResource(Resource):
     @jwt_required
     def put(self, id):
         qry = Orders.query.get(id)
+        if qry is None:
+            return {"status": "NOT_FOUND"}, 404
+
         penjual_id = qry.penjual_id
         claim = get_jwt_claims()
         user_id = claim["id"]
-        if qry is None:
-            return {"status": "NOT_FOUND"}, 404
-        elif penjual_id != user_id:
+
+        if penjual_id != user_id:
             return {"status": "Access Denied", "message": "user id not allowed"}, 403
 
         parser = reqparse.RequestParser()
-        parser.add_argument("nama_pembeli", location="json",
-                            type=str, default=qry.nama_pembeli)
-        parser.add_argument("alamat_pembeli", location="json",
-                            type=str, default=qry.alamat_pembeli)
-        parser.add_argument("produk_dipesan", location="json",
-                            type=str, default=qry.produk_dipesan)
-        parser.add_argument("harga", location="json",
-                            type=int, default=qry.harga)
+        parser.add_argument("nama_pembeli", location="json", type=str, default=qry.nama_pembeli)
+        parser.add_argument("alamat_pembeli", location="json", type=str, default=qry.alamat_pembeli)
+        parser.add_argument("produk_dipesan", location="json", type=str, default=qry.produk_dipesan)
+        parser.add_argument("harga", location="json", type=int, default=qry.harga)
         parser.add_argument("status", location="json", type=str, required=True)
-        parser.add_argument("kode_resi", location="json",
-                            type=str, default=qry.kode_resi)
+        parser.add_argument("kode_resi", location="json", type=str, default=qry.kode_resi)
 
         args = parser.parse_args()
 
@@ -112,17 +103,16 @@ class OrderResource(Resource):
     @jwt_required
     def delete(self, id):
         qry = Orders.query.get(id)
+        if qry is None:
+            return {"status": "NOT_FOUND"}, 404
+
         penjual_id = qry.penjual_id
         claim = get_jwt_claims()
         user_id = claim["id"]
-        if qry is None:
-            return {"status": "NOT_FOUND"}, 404
-        elif penjual_id == user_id:
+        if penjual_id == user_id:
             db.session.delete(qry)
             db.session.commit()
             return {"status": "Pesanan deleted"}, 200
-        return {"status": "Access Denied", "message": "user id not allowed"}, 403
-
 
 class OrderList(Resource):
     def options(self):
@@ -136,15 +126,14 @@ class OrderList(Resource):
         parser = reqparse.RequestParser()
         parser.add_argument('p', type=int, location='args', default=1)
         parser.add_argument('rp', type=int, location='args', default=1000)
-        parser.add_argument('created_at', location='args',
-                            help='invalid status')
-        parser.add_argument('start_time', location='args',
-                            help='invalid status')
+        parser.add_argument('created_at', location='args', help='invalid status')
+        parser.add_argument('start_time', location='args', help='invalid status')
         parser.add_argument('end_time', location='args', help='invalid status')
-        parser.add_argument('orderby', location='args',
-                            help='invalid orderby value', choices=('created_at'))
-        parser.add_argument('sort', location='args',
-                            help='invalid sort value', choices=('desc', 'asc'))
+        parser.add_argument('orderby', location='args', help='invalid orderby value', choices=('created_at'))
+        parser.add_argument('sort', location='args', help='invalid sort value', choices=('desc', 'asc'))
+        parser.add_argument('keyword', location='args', help='invalid value')
+        parser.add_argument('produk', location='args', help='invalid value')
+        parser.add_argument('resi', location='args', help='invalid value')
 
         args = parser.parse_args()
         offset = (args['p'] * args['rp'] - args['rp'])
@@ -153,9 +142,22 @@ class OrderList(Resource):
         qry_user = Users.query.filter_by(id=claim["id"]).first()
         penjual_id = qry_user.id
         qry = Orders.query.filter_by(penjual_id=penjual_id)
+        qrysearch = qry
 
         if args['start_time'] is not None:
-            qry = qry.filter_by(created_at=args['start_time'])
+            qry = qry.filter(
+                (Orders.created_at>=args['start_time']) &
+                (Orders.created_at<=args['end_time'])|
+                (Orders.created_at.like('%'+args['end_time']+'%'))
+                )
+
+        if args['keyword'] is not None:
+            qry = qrysearch.filter(
+                Orders.produk_dipesan.like('%'+args['keyword']+'%') |
+                Orders.nama_pembeli.like('%'+args['keyword']+'%') | 
+                Orders.kode_resi.like('%'+args['keyword']+'%') |
+                Orders.alamat_pembeli.like('%'+args['keyword']+'%')
+                )
 
         if args['orderby'] is not None:
             if args['orderby'] == 'created_at':
@@ -169,7 +171,6 @@ class OrderList(Resource):
             rows.append(marshal(row, Orders.response_fields))
 
         return rows, 200
-
 
  # Routes
 api.add_resource(OrderList, "", "/semua")

@@ -35,7 +35,7 @@ class TestConfig(Config):
     APP_DEBUG = True
     DEBUG = True
     MAX_BYTES = 100000
-    APP_PORT = 5050
+    APP_PORT = 6050
 
     SQLALCHEMY_DATABASE_URI = "%s+%s://%s:%s@%s:%s/%s_test" % (
         cfg["database"]["default_connection"],

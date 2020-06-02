@@ -19,7 +19,7 @@ bp_user = Blueprint("user", __name__)
 api = Api(bp_user)
 
 class UserResource(Resource):
-    
+
     def get(self, id):
         qry = Users.query.get(id)
         if qry is not None:
@@ -30,7 +30,6 @@ class UserResource(Resource):
             )
         return {"status": "NOT_FOUND"}, 404
 
-    # @jwt_required
     def post(self):
         parser = reqparse.RequestParser()
         parser.add_argument("username", location="json", required=True)
@@ -68,8 +67,6 @@ class UserResource(Resource):
         claim_client_id = claim["id"]
         parser = reqparse.RequestParser()
         qry = Users.query.get(claim_client_id)
-        if qry is None:
-            return {"status": "NOT_FOUND"}, 404
         parser.add_argument("username", location="json", default=qry.username)
         parser.add_argument("password", location="json", default=qry.password)
         parser.add_argument("status", location="json", default=qry.status)
@@ -105,13 +102,9 @@ class UserResource(Resource):
         claim = get_jwt_claims()
         claim_client_id = claim["id"]
         qry = Users.query.get(claim_client_id)
-        if qry is None:
-            return {"status": "NOT_FOUND"}, 404
-        elif qry is not None:
-            db.session.delete(qry)
-            db.session.commit()
-            return {"status": "User deleted"}, 200
-        return {"status": "Access Denied", "message": "user id not allowed"}, 403
+        db.session.delete(qry)
+        db.session.commit()
+        return {"status": "User deleted"}, 200
 
 
 class UserList(Resource):

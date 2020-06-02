@@ -6,6 +6,7 @@ flask-migrate
 flask-script
 flask-jwt-extended
 requests
+pytest-cov
 pytest
 werkzeug==0.16.0
 flask-cors
